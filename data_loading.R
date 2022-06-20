@@ -8,7 +8,7 @@ load("cross.Rdata")
 length(pheno_raw$Cisplatin)
 cross$pheno$Cadmium_Chloride
 
-length(cross$geno$`16`$data)/1008
+length(cross$geno$`1`$data)/1008
 head(cross$geno$`1`$data)
 cross$geno$`1`$data
 
@@ -17,7 +17,7 @@ ncol(geno_matrix)
 geno_matrix[,208]
 
 for(i in 1:16){
-  a<-length(cross$geno[[i]]$data)+a
+a<-length(cross$geno[[i]]$data)+a
 }
 a/1008
 cross$pheno$Caffeine
@@ -32,3 +32,4 @@ for(i in 1:16){
   num2<-length(cross$geno[[i]]$data)
   <-length(cross$geno[[i]]$data)+a
 }
+

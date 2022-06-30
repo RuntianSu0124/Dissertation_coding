@@ -1,0 +1,2 @@
+##Ridge regression
+library(glmnet)

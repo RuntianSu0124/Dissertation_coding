@@ -35,6 +35,7 @@ for(i in 1:16){
   int1<-int1+length(cross$geno[[i]]$data)/1008
 }
 
+yeast_geno
 
 
 

@@ -11,7 +11,7 @@ library(glmnet)
 # yeast growing condition: Caffeine
 library(glmnet)
 Caffeine_y<-c(cross$pheno$Caffeine)
-nn<-c(which(Caffeine_y>-1000))## Exclusion of missing values
+nn<-c(which(Caffeine_y>-1000))# Exclusion of missing values
 
 lambdas<-10^seq(3,-4,by=-.1)
 life.ridge<-glmnet(yeast_geno[nn,],Caffeine_y[nn],alpha=0,lambda=lambdas)

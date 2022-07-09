@@ -147,3 +147,13 @@ npcs<-which.min(cverr)-1
 ##
 R2s<-cbind(R2_ridge,R2_lasso,R2_elastic,R2_PCR)
 
+
+
+getwd()
+## Save the results
+save(R2_ridge,file="R2_ridge.RData")
+save(R2_lasso,file="R2_lasso.RData")
+save(R2_elastic,file="R2_elastic.RData")
+Alpha<-Alphas[alphas]
+save(Alpha,file="alphas.RData")
+save(R2_PCR,file="R2_PCR.RData")

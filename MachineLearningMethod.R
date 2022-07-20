@@ -110,11 +110,14 @@ for(i in 1:46){
   alphas[i,g]<-which.max(R2_Alphas)
   R2_elastic[i,g]<-max(R2_Alphas)
 }}
+plot(Alphas,R2_Alphas,type="l",xlab="alpha",ylab="R square")
+abline(h=max(R2_Alphas),col=2,lty=2)
+abline(v=Alphas[which.max(R2_Alphas)],col=2,lty=2)
 
-cv_fit<-cv.glmnet(X.train,Y.train,alpha=Alphas[12],lambda=lambdas,nfolds=10)
+cv_fit<-cv.glmnet(X.train,Y.train,alpha=Alphas[2],lambda=lambdas,nfolds=10)
 plot(cv_fit)
 
-en.models<-glmnet(X.test,Y.test,alpha=Alphas[12],lambda=lambdas)
+en.models<-glmnet(X.test,Y.test,alpha=Alphas[2],lambda=lambdas)
 plot(en.models,xvar='lambda')
 
 Alphas[alphas]# the values of alpha, 需要修改
@@ -192,15 +195,14 @@ for(i in 1:46){
   R2_OLS[i,g]<-1-sum((predict_y-y_bar)^2)/sum((Y.test-y_bar)^2)
 }
 }
-##Random Forest
 
+##Random Forest
 
 
 
 
 ##
 R2s<-cbind(R2_ridge,R2_lasso,R2_elastic,R2_PCR)
-
 
 
 

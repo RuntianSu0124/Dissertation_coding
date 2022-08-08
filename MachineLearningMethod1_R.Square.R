@@ -1,9 +1,18 @@
 library(pls)
 library(glmnet)
+library(randomForest)
+library(skimr)
+library(DataExplorer)
+library(e1071)
+library(caret)
+library(rrBLUP)
 set.seed(123)
 setwd("e:/rdata")
 load("pheno_raw.Rdata") 
 load("cross.Rdata")
+
+
+
 ##store the yeast genotype data in a matrix
 yeast_geno<-matrix(NA,nrow=1008,ncol=11623)
 int1<-1
@@ -14,6 +23,9 @@ for(i in 1:16){
   int1<-int1+length(cross$geno[[i]]$data)/1008
 }
 
+Y_raw<-c(cross$pheno[[i]])
+skim(Y_raw)
+plot_missing(Y_raw)
 
 
 
@@ -198,6 +210,142 @@ for(i in 1:46){
 
 ##Random Forest
 
+rf.train<-randomForest(Y.train~.,data=X.train,importance=TRUE,ntree=500)
+#树的数量与Error的关系
+plot(rf.train,main="ERROR & TREES")
+which.min(rf.train$mse)#mse与ntrees的关系
+#变量重要性
+importance(rf.train)
+varImpPlot(rf.train,main="Variable Importance Plot",type=1)
+varImpPlot(rf.train,main="Variable Importance Plot",type=2)
+varImpPlot(rf.train,main="Variable Importance Plot")
+#偏依赖性 太多了 应该不看了
+partialPlot(x=rf.train,
+            pred.data=)
+#测试集的预测
+rf.pre<-predict(rf.train,newdata=X.test)
+rf.pre
+plot(Y.test,type="l")
+#另一种检验预测结果的方法
+plot(x=Y.test,y=rf.pre,
+     xlab="Actual",ylab="Prediction",
+     main="Actual VS Prediction")
+trainlinmod<-lm(rf.pre~Y.test)
+abline(trainlinmod,col=3,lwd=2.5,lty="solid")
+abline(a=0,b=1,col=2,lwd=2.5,lty="dashed")
+legend("topleft",
+       legen=c("Model","Base"),
+       col=c("green","red"),text.width = 0.5,bty="n",
+       lwd=2.5,lty=c("solid","dashed")
+       )
+
+# R square on test set
+
+y_bar<-mean(rf.pre)
+1-sum((rf.pre-y_bar)^2)/sum((Y.test-y_bar)^2)
+
+
+
+plot(rf.train$y,rf.pre,main="Test Set")
+abline(1,1)
+##得到的效果不理想 要剔除一部分因变量
+##做筛选,查看importance
+imp.geno<-rf.train$importance
+head(imp.geno)
+##作图查看前30个因变量
+varImpPlot(rf.train, n.var = min(30, nrow(rf.train$importance)),
+           main = 'Top 30 - variable importance')
+# %IncMSE”即increase in mean squared error，通过对每一个预测变量随机赋值
+#如果该预测变量更为重要，那么其值被随机替换后模型预测的误差会增大。
+#因此，该值越大表示该变量的重要性越大
+
+# IncNodePurity”即increase in node purity，通过残差平方和来度量，
+#代表了每个变量对分类树每个节点上观测值的异质性的影响，
+#从而比较变量的重要性。该值越大表示该变量的重要性越大。
+
+#对于“%IncMSE”或“IncNodePurity”，二选一作为判断预测变量重要性的指标。
+#需注意的是，二者的排名存在一定的差异。
+## Cross Validation
+R2_RF<-matrix(NA,nrow=46,ncol=10)
+for(i in 1:46){
+  for(k in 1:10){
+    Y_raw<-c(cross$pheno[[i]])
+    nn<-c(which(Y_raw>-1000))## Exclusion of missing values
+    missings[i]<-1008-length(nn)
+    Y<-Y_raw[nn] #pheotype data without missing values
+    X<-yeast_geno[nn,]
+    #Dividing the training and test set
+    num<-sample(length(Y),0.8*length(Y))
+    Y.train<-Y[num]
+    X.train<-X[num,]
+    Y.test<-Y[-num]
+    X.test<-X[-num,]
+    #train the model by using train set 
+    
+    
+    
+    
+    #calculate R-square
+    y_bar<-mean(Y.test)
+    predict_y<-predict(RR_model,s=lambda,newx=X.test)
+    R2_RF[i,k]<-1-sum((predict_y-y_bar)^2)/sum((Y.test-y_bar)^2)
+  }}
+## 用函数交叉验证 mtrys& ntree
+mtrys<-c(5811,3874,2905)
+mses<-matrix(NA,nrow=500,ncol=3)
+R2_RF<-matrix(NA,nrow=46,ncol=10)
+
+  for(i in 1:46){
+    for(j in 1:10){
+      for(k in 1:3){
+        mtry<-mtrys[k]
+      #split dataset
+      Y_raw<-c(cross$pheno[[i]])
+      nn<-c(which(Y_raw>-1000))## Exclusion of missing values
+      missings[i]<-1008-length(nn)
+      Y<-Y_raw[nn] #pheotype data without missing values
+      X<-yeast_geno[nn,]
+      num<-sample(length(Y),0.8*length(Y))
+      Y.train<-Y[num]
+      X.train<-X[num,]
+      Y.test<-Y[-num]
+      X.test<-X[-num,]
+      ##train the model by using train set 
+      rf.train<-randomForest(Y.train~.,data=X.train,ntree=500,mtry=mtry)
+      mses[,k]<-rf.train$mse
+      }
+     a<- which(mses==min(mses),arr.ind=TRUE)
+     ntree<-a[1,1]
+     mtry<-mtrys[a[1,2]]
+     rf.train<-randomForest(Y.train~.,data=X.train,ntree=ntree,mtry=mtry)
+     rf.pre<-predict(rf.train,newdata=X.test)
+    
+    }}
+
+##rfcv减少特征的数量
+
+## 不做参数选择
+R2_RF<-matrix(NA,nrow=46,ncol=10)
+
+for(i in 1:46){
+  for(j in 1:10){
+    #split dataset
+    Y_raw<-c(cross$pheno[[i]])
+    nn<-c(which(Y_raw>-1000))## Exclusion of missing values
+    Y<-Y_raw[nn] #pheotype data without missing values
+    X<-yeast_geno[nn,]
+    num<-sample(length(Y),0.8*length(Y))
+    Y.train<-Y[num]
+    X.train<-X[num,]
+    Y.test<-Y[-num]
+    X.test<-X[-num,]
+    ##train the model by using train set 
+    rf.train<-randomForest(Y.train~.,data=X.train,ntree=500)
+    rf.pre<-predict(rf.train,newdata=X.test)
+    y_bar<-mean(rf.pre)
+    R2_RF[i,j]<-1-sum((rf.pre-y_bar)^2)/sum((Y.test-y_bar)^2)
+    }
+}
 
 
 
@@ -214,6 +362,7 @@ Alpha<-Alphas[alphas]
 save(Alpha,file="alphas.RData")
 save(R2_PCR,file="R2_PCR.RData")
 save(R2_OLS,file="R2_OLS.RData")
+save(R2_RF,file="R2_RF.RData")
 rowMeans(R2_PCR)
 results<-cbind(OLS=c(rowMeans(R2_OLS)),PCR=c(rowMeans(R2_PCR)),Ridge=c(rowMeans(R2_ridge)),
                Lasso=c(rowMeans(R2_lasso)),Elastic=c(rowMeans(R2_elastic)))
